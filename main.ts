@@ -50,5 +50,18 @@ if (tokens.length !== 1) refuse(`expected exactly one word, found ${tokens.lengt
 // it — no keyboard mash, no abbreviation, no punctuation tricks.
 if (!/^[a-z]+$/.test(onDisk)) refuse("the entry is not a plain lowercase word");
 if (!/[aeiou]/.test(onDisk)) refuse("the entry has no vowel, so it is not a speakable word");
+// Speakable means more than one vowel buried in it: demand at least
+// three vowel letters and at least two different ones, so the token
+// reads as a real word with syllables rather than a grunt or a code.
+// (defenestration carries e, e, a, i and o — five vowel letters.)
+const vowels = onDisk.match(/[aeiou]/g) ?? [];
+if (vowels.length < 3) refuse(`only ${vowels.length} vowel letters: not a syllabled word`);
+if (new Set(vowels).size < 2) refuse("all vowel letters are the same: not a natural word");
+// Byte-level belt and braces: the file is the word's UTF-8 bytes and
+// nothing more — no newline after it, no BOM before it.
+const rawBytes = readFileSync(target);
+if (!rawBytes.equals(Buffer.from(WORD, "utf8"))) {
+  refuse(`file holds ${rawBytes.length} bytes, not the word's exact ${wordBytes.length}`);
+}
 
 console.log(`wrote ${target}: "${onDisk}" (${chars.length} characters, one word, gate ok)`);
